@@ -1,6 +1,7 @@
 package com.ttProject.liverepeater;
 
 import org.red5.server.api.service.IServiceCall;
+import org.red5.server.service.Call;
 
 import com.ttProject.liverepeater.library.IRtmpClientEx;
 import com.ttProject.liverepeater.library.RtmpClientEx;
@@ -24,6 +25,14 @@ public class RepeatListener implements IRtmpClientEx {
 	}
 	@Override
 	public Object onInvoke(IServiceCall call) {
-		return "";
+		String method = call.getServiceMethodName();
+		System.out.println(method);
+/*		if("testFunc".equals(method)) {
+			System.out.println(call.getArguments()[0]);
+			System.out.println("send result");
+			call.setStatus(Call.STATUS_SUCCESS_RESULT);
+			return "hello";
+		}*/
+		return null;
 	}
 }

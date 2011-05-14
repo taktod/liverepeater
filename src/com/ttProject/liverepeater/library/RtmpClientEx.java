@@ -12,6 +12,7 @@ import org.red5.server.net.rtmp.INetStreamEventHandler;
 import org.red5.server.net.rtmp.RTMPClient;
 import org.red5.server.net.rtmp.RTMPConnection;
 import org.red5.server.net.rtmp.codec.RTMP;
+import org.red5.server.net.rtmp.event.Invoke;
 import org.red5.server.net.rtmp.event.Notify;
 import org.red5.server.net.rtmp.message.Header;
 import org.red5.server.service.Call;
@@ -163,17 +164,31 @@ public class RtmpClientEx extends RTMPClient{
 	@Override
 	protected void onInvoke(RTMPConnection conn, Channel channel, Header source,
 			Notify invoke, RTMP rtmp) {
-		final IServiceCall call = invoke.getCall();
+		IServiceCall call = invoke.getCall();
 		String methodName = call.getServiceMethodName();
 		Object result = null;
 		if(listener != null) {
 			result = listener.onInvoke(call);
 		}
-		if (!"_result".equals(methodName) && !"_error".equals(methodName)
-				&& !"onStatus".equals(methodName) && result == null) {
+		if ("_result".equals(methodName) || "_error".equals(methodName)
+				|| "onStatus".equals(methodName) || !(call instanceof IPendingServiceCall)) {
+			super.onInvoke(conn, channel, source, invoke, rtmp);
+			return;
+		}
+		IPendingServiceCall pscall = (IPendingServiceCall)call;
+		if(result == null) {
 			call.setStatus(Call.STATUS_METHOD_NOT_FOUND);
 		}
-		super.onInvoke(conn, channel, source, invoke, rtmp);
+		else {
+			call.setStatus(Call.STATUS_SUCCESS_RESULT);
+		}
+		pscall.setResult(result);
+		System.out.println(result);
+		Invoke reply = new Invoke();
+		reply.setHeader(source);
+		reply.setCall(pscall);
+		reply.setInvokeId(invoke.getInvokeId());
+		channel.write(reply);
 	}
 	@Override
 	public void createStream(IPendingServiceCallback callback) {
