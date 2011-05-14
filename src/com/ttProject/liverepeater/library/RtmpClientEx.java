@@ -4,28 +4,22 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.red5.server.api.event.IEventDispatcher;
-import org.red5.server.api.event.IEvent;
 import org.red5.server.api.service.IPendingServiceCall;
 import org.red5.server.api.service.IPendingServiceCallback;
 import org.red5.server.api.service.IServiceCall;
 import org.red5.server.net.rtmp.Channel;
-import org.red5.server.net.rtmp.DeferredResult;
 import org.red5.server.net.rtmp.INetStreamEventHandler;
 import org.red5.server.net.rtmp.RTMPClient;
 import org.red5.server.net.rtmp.RTMPConnection;
 import org.red5.server.net.rtmp.codec.RTMP;
-import org.red5.server.net.rtmp.event.Invoke;
 import org.red5.server.net.rtmp.event.Notify;
 import org.red5.server.net.rtmp.message.Header;
 import org.red5.server.service.Call;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class to connect other rtmp server.
  */
 public class RtmpClientEx extends RTMPClient{
-	private static final Logger log = LoggerFactory.getLogger(RtmpClientEx.class);
 	private String server;
 	private int port;
 	private String application;
@@ -169,45 +163,17 @@ public class RtmpClientEx extends RTMPClient{
 	@Override
 	protected void onInvoke(RTMPConnection conn, Channel channel, Header source,
 			Notify invoke, RTMP rtmp) {
-		super.onInvoke(conn, channel, source, invoke, rtmp);
-/*		if (invoke.getType() == IEvent.Type.STREAM_DATA) {
-			log.debug("Ignoring stream data notify with header: {}", source);
-			return;
-		}
-		log.debug("onInvoke: {}, invokeId: {}", invoke, invoke.getInvokeId());
 		final IServiceCall call = invoke.getCall();
 		String methodName = call.getServiceMethodName();
-		if ("_result".equals(methodName) || "_error".equals(methodName)) {
-			super.onInvoke(conn, channel, source, invoke, rtmp);
-			return;
+		Object result = null;
+		if(listener != null) {
+			result = listener.onInvoke(call);
 		}
-
-		// potentially used twice so get the value once
-		boolean onStatus = call.getServiceMethodName().equals("onStatus");
-		log.debug("onStatus {}", onStatus);
-		if (onStatus) {
-			super.onInvoke(conn, channel, source, invoke, rtmp);
-			return;
+		if (!"_result".equals(methodName) && !"_error".equals(methodName)
+				&& !"onStatus".equals(methodName) && result == null) {
+			call.setStatus(Call.STATUS_METHOD_NOT_FOUND);
 		}
-
-		if (call instanceof IPendingServiceCall) {
-			IPendingServiceCall psc = (IPendingServiceCall) call;
-			Object result = psc.getResult();
-			log.debug("Pending call result is: {}", result);
-			if (result instanceof DeferredResult) {
-				super.onInvoke(conn, channel, source, invoke, rtmp);
-				return;
-			} else if (!onStatus) {
-				Invoke reply = new Invoke();
-//				psc.setResult("_error");
-				psc.setStatus(Call.STATUS_METHOD_NOT_FOUND);
-				reply.setCall(psc);
-				reply.setInvokeId(invoke.getInvokeId());
-				
-				log.debug("Sending empty call reply: {}", reply);
-				channel.write(reply);
-			}
-		}// */
+		super.onInvoke(conn, channel, source, invoke, rtmp);
 	}
 	@Override
 	public void createStream(IPendingServiceCallback callback) {

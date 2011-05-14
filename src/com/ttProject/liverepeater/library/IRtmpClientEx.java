@@ -6,5 +6,5 @@ public interface IRtmpClientEx {
 	public void onConnect();
 	public void onDisconnect();
 	public void onCreateStream(Integer streamId);
-	public void onInvoke(IServiceCall call);
+	public Object onInvoke(IServiceCall call);
 }

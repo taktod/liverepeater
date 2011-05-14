@@ -23,6 +23,7 @@ public class RepeatListener implements IRtmpClientEx {
 	public void onDisconnect() {
 	}
 	@Override
-	public void onInvoke(IServiceCall call) {
+	public Object onInvoke(IServiceCall call) {
+		return "";
 	}
 }
